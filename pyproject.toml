@@ -1,0 +1,7 @@
+[project]
+name = "db_fwd"
+version = "0.1.0"
+description = "Forwards a SQL query result to a web API endpoint."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
