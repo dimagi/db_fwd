@@ -1,0 +1,17 @@
+[db_fwd]
+log_level = 'info'
+log_file = 'db_fwd.log'
+log_db_url = 'postgresql://username:Passw0rd1@pg.example.com:5432/dbname'
+
+[queries]
+db_url = 'postgresql://username:Passw0rd1@pg.example.com:5432/dbname'
+api_username = 'admin@example.com'
+api_password = 'Password!'
+
+[queries.queryname1]
+query = "SELECT json_payload FROM queryname1_view WHERE period = '%s';"
+api_url = 'https://dhis2.example.com/api/dataset/abcd1234/'
+
+[queries.queryname2]
+query = "SELECT json_payload FROM queryname2_view WHERE category_id = '%s' AND period = '%s';"
+api_url = 'https://dhis2.example.com/api/dataset/efgh5678/'
