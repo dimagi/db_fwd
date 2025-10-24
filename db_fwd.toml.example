@@ -1,17 +1,44 @@
+# Example configuration file for db_fwd
+# Copy this file to db_fwd.toml and customize for your environment
+
 [db_fwd]
+# Log level: 'none', 'info', or 'debug'
 log_level = 'info'
+
+# Path to log file
 log_file = 'db_fwd.log'
-log_db_url = 'postgresql://username:Passw0rd1@pg.example.com:5432/dbname'
+
+# Optional: Database URL for storing debug-level logs
+# Logs will be stored in the db_fwd_logs table
+log_db_url = 'postgresql://username:password@localhost:5432/db_fwd'
 
 [queries]
-db_url = 'postgresql://username:Passw0rd1@pg.example.com:5432/dbname'
-api_username = 'admin@example.com'
-api_password = 'Password!'
+# Default database URL for all queries (can be overridden per query)
+db_url = 'postgresql://username:password@localhost:5432/dbname'
 
+# Default API credentials (can be overridden per query)
+api_username = 'admin@example.com'
+api_password = 'your_password'
+
+# Optional: Default API URL for all queries
+# api_url = 'https://api.example.com/endpoint'
+
+# Example query configuration with single parameter
+# Use :param1 for the first parameter passed on command line
 [queries.queryname1]
-query = "SELECT json_payload FROM queryname1_view WHERE period = '%s';"
+query = "SELECT json_payload FROM queryname1_view WHERE period = :param1;"
 api_url = 'https://dhis2.example.com/api/dataset/abcd1234/'
 
+# Example query with multiple parameters
+# Use :param1, :param2, etc. for multiple parameters in order
 [queries.queryname2]
-query = "SELECT json_payload FROM queryname2_view WHERE category_id = '%s' AND period = '%s';"
+query = "SELECT json_payload FROM queryname2_view WHERE category_id = :param1 AND period = :param2;"
 api_url = 'https://dhis2.example.com/api/dataset/efgh5678/'
+
+# Example query with custom database URL
+[queries.queryname3]
+query = "SELECT json_payload FROM special_view WHERE id = :param1;"
+db_url = 'postgresql://other_user:password@otherhost:5432/other_db'
+api_url = 'https://api.example.com/special'
+api_username = 'special_user'
+api_password = 'special_password'

@@ -61,11 +61,11 @@ api_username = 'admin@example.com'
 api_password = 'Password!'
 
 [queries.queryname1]
-query = "SELECT json_payload FROM queryname1_view WHERE period = '%s';"
+query = "SELECT json_payload FROM queryname1_view WHERE period = :param1;"
 api_url = 'https://dhis2.example.com/api/dataset/abcd1234/'
 
 [queries.queryname2]
-query = "SELECT json_payload FROM queryname2_view WHERE category_id = '%s' AND period = '%s';"
+query = "SELECT json_payload FROM queryname2_view WHERE category_id = :param1 AND period = :param2;"
 api_url = 'https://dhis2.example.com/api/dataset/efgh5678/'
 ```
 
@@ -105,7 +105,10 @@ environment variables "DB_FWD_API_USERNAME" and "DB_FWD_API_PASSWORD".
 Each query has a section.
 
 `query` is the SQL query that will be executed. It must return a single
-field.
+field. Query parameters should use named placeholders (`:param1`,
+`:param2`, etc.). Parameters passed on the command line are mapped to
+these placeholders in order (first command line parameter becomes
+`:param1`, second becomes `:param2`, etc.).
 
 `api_url` is the API endpoint that the value of the field returned by
 `query` will be forwarded to. If `api_url` was given in the `queries`
