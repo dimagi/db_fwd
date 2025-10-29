@@ -14,7 +14,7 @@ def test_setup_logging_info_level():
 
         set_up_logging('info', str(log_file))
 
-        logging.info("Test info message")
+        logging.info('Test info message')
 
         # Close all handlers to ensure messages are written
         for handler in logging.root.handlers[:]:
@@ -24,8 +24,8 @@ def test_setup_logging_info_level():
         with open(log_file, 'r') as f:
             content = f.read()
 
-        assert "Test info message" in content
-        assert "INFO" in content
+        assert 'Test info message' in content
+        assert 'INFO' in content
 
 
 def test_setup_logging_debug_level():
@@ -34,8 +34,8 @@ def test_setup_logging_debug_level():
 
         set_up_logging('debug', str(log_file))
 
-        logging.debug("Test debug message")
-        logging.info("Test info message")
+        logging.debug('Test debug message')
+        logging.info('Test info message')
 
         # Close all handlers to ensure messages are written
         for handler in logging.root.handlers[:]:
@@ -45,27 +45,29 @@ def test_setup_logging_debug_level():
         with open(log_file, 'r') as f:
             content = f.read()
 
-        assert "Test debug message" in content
-        assert "DEBUG" in content
-        assert "Test info message" in content
+        assert 'Test debug message' in content
+        assert 'DEBUG' in content
+        assert 'Test info message' in content
 
 
 def test_setup_logging_none_level():
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.log', delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        mode='w', suffix='.log', delete=False
+    ) as f:
         log_file = f.name
 
     try:
         set_up_logging('none', log_file)
 
-        logging.critical("Test critical message")
-        logging.error("Test error message")
-        logging.info("Test info message")
+        logging.critical('Test critical message')
+        logging.error('Test error message')
+        logging.info('Test info message')
 
         with open(log_file, 'r') as f:
             content = f.read()
 
-        assert "Test info message" not in content
-        assert "Test error message" not in content
+        assert 'Test info message' not in content
+        assert 'Test error message' not in content
     finally:
         Path(log_file).unlink()
         for handler in logging.root.handlers[:]:
@@ -79,7 +81,7 @@ def test_setup_logging_creates_file():
 
         set_up_logging('info', str(log_file))
 
-        logging.info("Test message")
+        logging.info('Test message')
 
         assert log_file.exists()
 
@@ -93,7 +95,7 @@ def test_setup_logging_format():
 
         set_up_logging('info', str(log_file))
 
-        logging.info("Test message")
+        logging.info('Test message')
 
         # Close all handlers to ensure messages are written
         for handler in logging.root.handlers[:]:
@@ -103,7 +105,7 @@ def test_setup_logging_format():
         with open(log_file, 'r') as f:
             content = f.read()
 
-        assert " - INFO - Test message" in content
+        assert ' - INFO - Test message' in content
         assert re.search(r'\d{4}-\d{2}-\d{2}', content)
 
 
@@ -113,8 +115,8 @@ def test_setup_logging_invalid_level():
 
         set_up_logging('invalid', str(log_file))
 
-        logging.info("Test info message")
-        logging.debug("Test debug message")
+        logging.info('Test info message')
+        logging.debug('Test debug message')
 
         # Close all handlers to ensure messages are written
         for handler in logging.root.handlers[:]:
@@ -124,5 +126,5 @@ def test_setup_logging_invalid_level():
         with open(log_file, 'r') as f:
             content = f.read()
 
-        assert "Test info message" in content
-        assert "Test debug message" not in content
+        assert 'Test info message' in content
+        assert 'Test debug message' not in content

@@ -13,20 +13,24 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from db_fwd import execute_query, DatabaseLogger
 
-TEST_DB_URL = "postgresql://postgres:postgres@localhost:5432/postgres"
+TEST_DB_URL = 'postgresql://postgres:postgres@localhost:5432/postgres'
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope='function')
 def test_db():
     engine = create_engine(TEST_DB_URL)
 
     with engine.connect() as conn:
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS test_data (
-                id SERIAL PRIMARY KEY,
-                data JSONB
+        conn.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS test_data (
+                    id SERIAL PRIMARY KEY,
+                    data JSONB
+                )
+                """
             )
-        """))
+        )
         conn.commit()
 
     try:
@@ -34,18 +38,18 @@ def test_db():
 
     finally:
         with engine.connect() as conn:
-            conn.execute(text("DROP TABLE IF EXISTS test_data"))
+            conn.execute(text('DROP TABLE IF EXISTS test_data'))
             conn.commit()
 
         engine.dispose()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope='function')
 def test_log_db():
     engine = create_engine(TEST_DB_URL)
 
     with engine.connect() as conn:
-        conn.execute(text("DROP TABLE IF EXISTS db_fwd_logs"))
+        conn.execute(text('DROP TABLE IF EXISTS db_fwd_logs'))
         conn.commit()
 
     try:
@@ -53,7 +57,7 @@ def test_log_db():
 
     finally:
         with engine.connect() as conn:
-            conn.execute(text("DROP TABLE IF EXISTS db_fwd_logs"))
+            conn.execute(text('DROP TABLE IF EXISTS db_fwd_logs'))
             conn.commit()
 
         engine.dispose()
@@ -63,13 +67,17 @@ def test_execute_query_success(test_db):
     engine = create_engine(test_db)
 
     with engine.connect() as conn:
-        conn.execute(text("INSERT INTO test_data (data) VALUES (:data)"),
-                    {"data": '{"test": "data"}'})
+        conn.execute(
+            text('INSERT INTO test_data (data) VALUES (:data)'),
+            {'data': '{"test": "data"}'},
+        )
         conn.commit()
 
     engine.dispose()
 
-    result = execute_query(test_db, 'SELECT data::text FROM test_data LIMIT 1;', [])
+    result = execute_query(
+        test_db, 'SELECT data::text FROM test_data LIMIT 1;', []
+    )
 
     assert result == '{"test": "data"}'
 
@@ -78,8 +86,10 @@ def test_execute_query_with_params(test_db):
     engine = create_engine(test_db)
 
     with engine.connect() as conn:
-        conn.execute(text("INSERT INTO test_data (data) VALUES (:data)"),
-                    {"data": '{"period": "2024Q1"}'})
+        conn.execute(
+            text('INSERT INTO test_data (data) VALUES (:data)'),
+            {'data': '{"period": "2024Q1"}'},
+        )
         conn.commit()
 
     engine.dispose()
@@ -87,7 +97,7 @@ def test_execute_query_with_params(test_db):
     result = execute_query(
         test_db,
         "SELECT data::text FROM test_data WHERE data->>'period' = :param1;",
-        ['2024Q1']
+        ['2024Q1'],
     )
 
     assert result == '{"period": "2024Q1"}'
@@ -96,21 +106,27 @@ def test_execute_query_with_params(test_db):
 def test_execute_query_no_results(test_db):
     # Don't insert any data, table is empty
 
-    with pytest.raises(ValueError, match="Query returned no results"):
-        execute_query(test_db, 'SELECT data FROM test_data WHERE id = 99999;', [])
+    with pytest.raises(ValueError, match='Query returned no results'):
+        execute_query(
+            test_db, 'SELECT data FROM test_data WHERE id = 99999;', []
+        )
 
 
 def test_execute_query_multiple_fields(test_db):
     engine = create_engine(test_db)
 
     with engine.connect() as conn:
-        conn.execute(text("INSERT INTO test_data (data) VALUES (:data)"),
-                    {"data": '{"test": "data"}'})
+        conn.execute(
+            text('INSERT INTO test_data (data) VALUES (:data)'),
+            {'data': '{"test": "data"}'},
+        )
         conn.commit()
 
     engine.dispose()
 
-    with pytest.raises(ValueError, match="Query must return exactly one field"):
+    with pytest.raises(
+        ValueError, match='Query must return exactly one field'
+    ):
         execute_query(test_db, 'SELECT id, data FROM test_data;', [])
 
 
@@ -123,7 +139,7 @@ def test_execute_query_database_error(mock_create_engine):
     mock_context = MagicMock()
     mock_context.__enter__.return_value = mock_conn
     mock_engine.connect.return_value = mock_context
-    mock_conn.execute.side_effect = SQLAlchemyError("Connection failed")
+    mock_conn.execute.side_effect = SQLAlchemyError('Connection failed')
 
     with pytest.raises(SQLAlchemyError):
         execute_query('postgresql://localhost/test', 'SELECT data;', [])
@@ -141,9 +157,17 @@ def test_database_logger_init_with_url(test_log_db):
 
     engine = create_engine(test_log_db)
     with engine.connect() as conn:
-        result = conn.execute(text(
-            "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='db_fwd_logs')"
-        ))
+        result = conn.execute(
+            text(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_name='db_fwd_logs'
+                )
+                """
+            )
+        )
         exists = result.fetchone()[0]
         assert exists is True
 
@@ -156,7 +180,7 @@ def test_database_logger_log(test_log_db):
 
     engine = create_engine(test_log_db)
     with engine.connect() as conn:
-        result = conn.execute(text("SELECT level, message FROM db_fwd_logs"))
+        result = conn.execute(text('SELECT level, message FROM db_fwd_logs'))
         row = result.fetchone()
         assert row is not None
         assert row[0] == 'INFO'
@@ -179,7 +203,10 @@ def test_database_logger_log_error(mock_create_engine):
     mock_context = MagicMock()
     mock_context.__enter__.return_value = mock_conn
     mock_engine.connect.return_value = mock_context
-    mock_conn.execute.side_effect = [None, SQLAlchemyError("Log insert failed")]
+    mock_conn.execute.side_effect = [
+        None,
+        SQLAlchemyError('Log insert failed'),
+    ]
 
     logger = DatabaseLogger('postgresql://localhost/logs')
 
@@ -191,8 +218,10 @@ def test_execute_query_sql_injection_safe(test_db):
     engine = create_engine(test_db)
 
     with engine.connect() as conn:
-        conn.execute(text("INSERT INTO test_data (id, data) VALUES (1, :data)"),
-                    {"data": '{"data": "safe"}'})
+        conn.execute(
+            text('INSERT INTO test_data (id, data) VALUES (1, :data)'),
+            {'data': '{"data": "safe"}'},
+        )
         conn.commit()
 
     engine.dispose()
@@ -203,18 +232,28 @@ def test_execute_query_sql_injection_safe(test_db):
         execute_query(
             test_db,
             "SELECT data FROM test_data WHERE data->>'data' = :param1;",
-            [malicious_param]
+            [malicious_param],
         )
     except ValueError:
         pass  # Expected - no results found
 
     engine = create_engine(test_db)
     with engine.connect() as conn:
-        result = conn.execute(text(
-            "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='test_data')"
-        ))
+        result = conn.execute(
+            text(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_name='test_data'
+                )
+                """
+            )
+        )
         exists = result.fetchone()[0]
-        assert exists is True, "Table should still exist - SQL injection was prevented"
+        assert (
+            exists is True
+        ), 'Table should still exist - SQL injection was prevented'
 
     engine.dispose()
 
@@ -223,16 +262,30 @@ def test_execute_query_multiple_params(test_db):
     engine = create_engine(test_db)
 
     with engine.connect() as conn:
-        conn.execute(text("INSERT INTO test_data (data) VALUES (:data)"),
-                    {"data": '{"category": "category1", "period": "2024Q1", "status": "active"}'})
+        conn.execute(
+            text('INSERT INTO test_data (data) VALUES (:data)'),
+            {
+                'data': '{"category": "category1", "period": "2024Q1", "status": "active"}'
+            },
+        )
         conn.commit()
 
     engine.dispose()
 
     result = execute_query(
         test_db,
-        "SELECT data::text FROM test_data WHERE data->>'category' = :param1 AND data->>'period' = :param2 AND data->>'status' = :param3;",
-        ['category1', '2024Q1', 'active']
+        """
+        SELECT data::text
+        FROM test_data
+        WHERE data->>'category' = :param1
+          AND data->>'period' = :param2
+          AND data->>'status' = :param3;
+        """,
+        ['category1', '2024Q1', 'active'],
     )
 
-    assert json.loads(result) == {"category": "category1", "period": "2024Q1", "status": "active"}
+    assert json.loads(result) == {
+        'category': 'category1',
+        'period': '2024Q1',
+        'status': 'active',
+    }

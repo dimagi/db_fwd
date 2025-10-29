@@ -37,7 +37,9 @@ api_password = 'other_pass'
 query = "SELECT result FROM minimal;"
 """
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        mode='w', suffix='.toml', delete=False
+    ) as f:
         f.write(config_content)
         temp_path = f.name
 
@@ -65,9 +67,11 @@ def test_get_log_level(sample_config_file):
 
 
 def test_get_log_level_default():
-    config_content = "[db_fwd]\n"
+    config_content = '[db_fwd]\n'
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        mode='w', suffix='.toml', delete=False
+    ) as f:
         f.write(config_content)
         temp_path = f.name
 
@@ -84,9 +88,11 @@ def test_get_log_file(sample_config_file):
 
 
 def test_get_log_file_default():
-    config_content = "[db_fwd]\n"
+    config_content = '[db_fwd]\n'
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        mode='w', suffix='.toml', delete=False
+    ) as f:
         f.write(config_content)
         temp_path = f.name
 
@@ -109,7 +115,9 @@ def test_get_db_url_from_queries_section(sample_config_file):
 
 def test_get_db_url_query_specific(sample_config_file):
     config = Config(sample_config_file)
-    assert config.get_db_url('query_with_db') == 'postgresql://localhost/other_db'
+    assert (
+        config.get_db_url('query_with_db') == 'postgresql://localhost/other_db'
+    )
 
 
 def test_get_db_url_from_env():
@@ -121,7 +129,9 @@ query = "SELECT 1;"
 api_url = "https://example.com/api"
 """
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        mode='w', suffix='.toml', delete=False
+    ) as f:
         f.write(config_content)
         temp_path = f.name
 
@@ -143,13 +153,15 @@ def test_get_db_url_missing():
 query = "SELECT 1;"
 """
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        mode='w', suffix='.toml', delete=False
+    ) as f:
         f.write(config_content)
         temp_path = f.name
 
     try:
         config = Config(temp_path)
-        with pytest.raises(ValueError, match="Database URL not configured"):
+        with pytest.raises(ValueError, match='Database URL not configured'):
             config.get_db_url('test')
     finally:
         Path(temp_path).unlink()
@@ -158,7 +170,7 @@ query = "SELECT 1;"
 def test_get_query(sample_config_file):
     config = Config(sample_config_file)
     query = config.get_query('test_query')
-    assert "SELECT json_payload FROM test_view" in query
+    assert 'SELECT json_payload FROM test_view' in query
 
 
 def test_get_query_not_found(sample_config_file):
@@ -175,13 +187,15 @@ def test_get_query_no_sql(sample_config_file):
 api_url = "https://example.com/api"
 """
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        mode='w', suffix='.toml', delete=False
+    ) as f:
         f.write(config_content)
         temp_path = f.name
 
     try:
         config = Config(temp_path)
-        with pytest.raises(ValueError, match="No query defined"):
+        with pytest.raises(ValueError, match='No query defined'):
             config.get_query('bad_query')
     finally:
         Path(temp_path).unlink()
@@ -194,7 +208,10 @@ def test_get_api_url_query_specific(sample_config_file):
 
 def test_get_api_url_from_queries_section(sample_config_file):
     config = Config(sample_config_file)
-    assert config.get_api_url('minimal_query') == 'https://example.com/api/default'
+    assert (
+        config.get_api_url('minimal_query')
+        == 'https://example.com/api/default'
+    )
 
 
 def test_get_api_url_missing():
@@ -205,13 +222,15 @@ def test_get_api_url_missing():
 query = "SELECT 1;"
 """
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        mode='w', suffix='.toml', delete=False
+    ) as f:
         f.write(config_content)
         temp_path = f.name
 
     try:
         config = Config(temp_path)
-        with pytest.raises(ValueError, match="API URL not configured"):
+        with pytest.raises(ValueError, match='API URL not configured'):
             config.get_api_url('test')
     finally:
         Path(temp_path).unlink()
@@ -240,7 +259,9 @@ query = "SELECT 1;"
 api_url = "https://example.com/api"
 """
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        mode='w', suffix='.toml', delete=False
+    ) as f:
         f.write(config_content)
         temp_path = f.name
 
@@ -268,7 +289,9 @@ query = "SELECT 1;"
 api_url = "https://example.com/api"
 """
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        mode='w', suffix='.toml', delete=False
+    ) as f:
         f.write(config_content)
         temp_path = f.name
 

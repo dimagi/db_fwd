@@ -24,19 +24,25 @@ def test_parse_args_with_params():
 
 
 def test_parse_args_with_log_level():
-    with patch('sys.argv', ['db_fwd.py', '--log-level', 'debug', 'query_name']):
+    with patch(
+        'sys.argv', ['db_fwd.py', '--log-level', 'debug', 'query_name']
+    ):
         args = parse_args()
         assert args.log_level == 'debug'
 
 
 def test_parse_args_with_log_file():
-    with patch('sys.argv', ['db_fwd.py', '--log-file', 'custom.log', 'query_name']):
+    with patch(
+        'sys.argv', ['db_fwd.py', '--log-file', 'custom.log', 'query_name']
+    ):
         args = parse_args()
         assert args.log_file == 'custom.log'
 
 
 def test_parse_args_with_config_file():
-    with patch('sys.argv', ['db_fwd.py', '--config-file', 'custom.toml', 'query_name']):
+    with patch(
+        'sys.argv', ['db_fwd.py', '--config-file', 'custom.toml', 'query_name']
+    ):
         args = parse_args()
         assert args.config_file == 'custom.toml'
 
@@ -44,12 +50,15 @@ def test_parse_args_with_config_file():
 def test_parse_args_all_options():
     test_argv = [
         'db_fwd.py',
-        '--log-level', 'info',
-        '--log-file', 'test.log',
-        '--config-file', 'test.toml',
+        '--log-level',
+        'info',
+        '--log-file',
+        'test.log',
+        '--config-file',
+        'test.toml',
         'my_query',
         'param1',
-        'param2'
+        'param2',
     ]
 
     with patch('sys.argv', test_argv):
@@ -66,14 +75,19 @@ def test_parse_args_all_options():
 @patch('db_fwd.DatabaseLogger')
 @patch('db_fwd.set_up_logging')
 @patch('db_fwd.Config')
-def test_main_success(mock_config_class, mock_setup_logging, mock_db_logger_class,
-                      mock_execute_query, mock_forward_to_api):
+def test_main_success(
+    mock_config_class,
+    mock_setup_logging,
+    mock_db_logger_class,
+    mock_execute_query,
+    mock_forward_to_api,
+):
     mock_config = Mock()
     mock_config.get_log_level.return_value = 'info'
     mock_config.get_log_file.return_value = 'test.log'
     mock_config.get_log_db_url.return_value = None
     mock_config.get_db_url.return_value = 'postgresql://localhost/test'
-    mock_config.get_query.return_value = "SELECT data FROM test;"
+    mock_config.get_query.return_value = 'SELECT data FROM test;'
     mock_config.get_api_url.return_value = 'https://example.com/api'
     mock_config.get_api_credentials.return_value = ('user', 'pass')
     mock_config_class.return_value = mock_config
@@ -94,7 +108,7 @@ def test_main_success(mock_config_class, mock_setup_logging, mock_db_logger_clas
 
 @patch('db_fwd.Config')
 def test_main_config_file_not_found(mock_config_class):
-    mock_config_class.side_effect = FileNotFoundError("Config not found")
+    mock_config_class.side_effect = FileNotFoundError('Config not found')
 
     with patch('sys.argv', ['db_fwd.py', 'test_query']):
         with pytest.raises(SystemExit) as exc_info:
@@ -106,14 +120,18 @@ def test_main_config_file_not_found(mock_config_class):
 @patch('db_fwd.DatabaseLogger')
 @patch('db_fwd.set_up_logging')
 @patch('db_fwd.Config')
-def test_main_query_error(mock_config_class, mock_setup_logging,
-                          mock_db_logger_class, mock_execute_query):
+def test_main_query_error(
+    mock_config_class,
+    mock_setup_logging,
+    mock_db_logger_class,
+    mock_execute_query,
+):
     mock_config = Mock()
     mock_config.get_log_level.return_value = 'info'
     mock_config.get_log_file.return_value = 'test.log'
     mock_config.get_log_db_url.return_value = None
     mock_config.get_db_url.return_value = 'postgresql://localhost/test'
-    mock_config.get_query.return_value = "SELECT data FROM test;"
+    mock_config.get_query.return_value = 'SELECT data FROM test;'
     mock_config.get_api_url.return_value = 'https://example.com/api'
     mock_config.get_api_credentials.return_value = ('user', 'pass')
     mock_config_class.return_value = mock_config
@@ -121,7 +139,7 @@ def test_main_query_error(mock_config_class, mock_setup_logging,
     mock_db_logger = Mock()
     mock_db_logger_class.return_value = mock_db_logger
 
-    mock_execute_query.side_effect = ValueError("Query failed")
+    mock_execute_query.side_effect = ValueError('Query failed')
 
     with patch('sys.argv', ['db_fwd.py', 'test_query']):
         with pytest.raises(SystemExit) as exc_info:
@@ -134,15 +152,19 @@ def test_main_query_error(mock_config_class, mock_setup_logging,
 @patch('db_fwd.DatabaseLogger')
 @patch('db_fwd.set_up_logging')
 @patch('db_fwd.Config')
-def test_main_api_error(mock_config_class, mock_setup_logging,
-                        mock_db_logger_class, mock_execute_query,
-                        mock_forward_to_api):
+def test_main_api_error(
+    mock_config_class,
+    mock_setup_logging,
+    mock_db_logger_class,
+    mock_execute_query,
+    mock_forward_to_api,
+):
     mock_config = Mock()
     mock_config.get_log_level.return_value = 'info'
     mock_config.get_log_file.return_value = 'test.log'
     mock_config.get_log_db_url.return_value = None
     mock_config.get_db_url.return_value = 'postgresql://localhost/test'
-    mock_config.get_query.return_value = "SELECT data FROM test;"
+    mock_config.get_query.return_value = 'SELECT data FROM test;'
     mock_config.get_api_url.return_value = 'https://example.com/api'
     mock_config.get_api_credentials.return_value = ('user', 'pass')
     mock_config_class.return_value = mock_config
@@ -151,7 +173,7 @@ def test_main_api_error(mock_config_class, mock_setup_logging,
     mock_db_logger_class.return_value = mock_db_logger
 
     mock_execute_query.return_value = '{"test": "data"}'
-    mock_forward_to_api.side_effect = Exception("API failed")
+    mock_forward_to_api.side_effect = Exception('API failed')
 
     with patch('sys.argv', ['db_fwd.py', 'test_query']):
         with pytest.raises(SystemExit) as exc_info:
@@ -164,15 +186,19 @@ def test_main_api_error(mock_config_class, mock_setup_logging,
 @patch('db_fwd.DatabaseLogger')
 @patch('db_fwd.set_up_logging')
 @patch('db_fwd.Config')
-def test_main_with_query_params(mock_config_class, mock_setup_logging,
-                                 mock_db_logger_class, mock_execute_query,
-                                 mock_forward_to_api):
+def test_main_with_query_params(
+    mock_config_class,
+    mock_setup_logging,
+    mock_db_logger_class,
+    mock_execute_query,
+    mock_forward_to_api,
+):
     mock_config = Mock()
     mock_config.get_log_level.return_value = 'info'
     mock_config.get_log_file.return_value = 'test.log'
     mock_config.get_log_db_url.return_value = None
     mock_config.get_db_url.return_value = 'postgresql://localhost/test'
-    mock_config.get_query.return_value = "SELECT data WHERE period = :param1;"
+    mock_config.get_query.return_value = 'SELECT data WHERE period = :param1;'
     mock_config.get_api_url.return_value = 'https://example.com/api'
     mock_config.get_api_credentials.return_value = ('user', 'pass')
     mock_config_class.return_value = mock_config
@@ -195,15 +221,19 @@ def test_main_with_query_params(mock_config_class, mock_setup_logging,
 @patch('db_fwd.DatabaseLogger')
 @patch('db_fwd.set_up_logging')
 @patch('db_fwd.Config')
-def test_main_with_cli_overrides(mock_config_class, mock_setup_logging,
-                                  mock_db_logger_class, mock_execute_query,
-                                  mock_forward_to_api):
+def test_main_with_cli_overrides(
+    mock_config_class,
+    mock_setup_logging,
+    mock_db_logger_class,
+    mock_execute_query,
+    mock_forward_to_api,
+):
     mock_config = Mock()
     mock_config.get_log_level.return_value = 'info'
     mock_config.get_log_file.return_value = 'default.log'
     mock_config.get_log_db_url.return_value = None
     mock_config.get_db_url.return_value = 'postgresql://localhost/test'
-    mock_config.get_query.return_value = "SELECT data FROM test;"
+    mock_config.get_query.return_value = 'SELECT data FROM test;'
     mock_config.get_api_url.return_value = 'https://example.com/api'
     mock_config.get_api_credentials.return_value = ('user', 'pass')
     mock_config_class.return_value = mock_config
@@ -213,8 +243,17 @@ def test_main_with_cli_overrides(mock_config_class, mock_setup_logging,
 
     mock_execute_query.return_value = '{"test": "data"}'
 
-    with patch('sys.argv', ['db_fwd.py', '--log-level', 'debug',
-                            '--log-file', 'custom.log', 'test_query']):
+    with patch(
+        'sys.argv',
+        [
+            'db_fwd.py',
+            '--log-level',
+            'debug',
+            '--log-file',
+            'custom.log',
+            'test_query',
+        ],
+    ):
         main()
 
     mock_setup_logging.assert_called_once_with('debug', 'custom.log')
