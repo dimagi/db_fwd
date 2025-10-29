@@ -1,90 +1,117 @@
-"""Tests for database operations."""
+"""
+Tests for database operations.
 
+Assumes a PostgreSQL service running on localhost on port 5432 with
+user "postgres" and password "postgres".
+"""
+
+import json
 import pytest
 from unittest.mock import Mock, MagicMock, patch
+from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from db_fwd import execute_query, DatabaseLogger
 
+TEST_DB_URL = "postgresql://postgres:postgres@localhost:5432/postgres"
 
-@patch('db_fwd.create_engine')
-def test_execute_query_success(mock_create_engine):
-    mock_engine = Mock()
-    mock_conn = Mock()
-    mock_result = Mock()
-    mock_row = ('{"test": "data"}',)
 
-    mock_create_engine.return_value = mock_engine
-    mock_context = MagicMock()
-    mock_context.__enter__.return_value = mock_conn
-    mock_engine.connect.return_value = mock_context
-    mock_conn.execute.return_value = mock_result
-    mock_result.fetchone.return_value = mock_row
+@pytest.fixture(scope="function")
+def test_db():
+    engine = create_engine(TEST_DB_URL)
 
-    result = execute_query('postgresql://localhost/test', 'SELECT data;', [])
+    with engine.connect() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS test_data (
+                id SERIAL PRIMARY KEY,
+                data JSONB
+            )
+        """))
+        conn.commit()
+
+    try:
+        yield TEST_DB_URL
+
+    finally:
+        with engine.connect() as conn:
+            conn.execute(text("DROP TABLE IF EXISTS test_data"))
+            conn.commit()
+
+        engine.dispose()
+
+
+@pytest.fixture(scope="function")
+def test_log_db():
+    engine = create_engine(TEST_DB_URL)
+
+    with engine.connect() as conn:
+        conn.execute(text("DROP TABLE IF EXISTS db_fwd_logs"))
+        conn.commit()
+
+    try:
+        yield TEST_DB_URL
+
+    finally:
+        with engine.connect() as conn:
+            conn.execute(text("DROP TABLE IF EXISTS db_fwd_logs"))
+            conn.commit()
+
+        engine.dispose()
+
+
+def test_execute_query_success(test_db):
+    engine = create_engine(test_db)
+
+    with engine.connect() as conn:
+        conn.execute(text("INSERT INTO test_data (data) VALUES (:data)"),
+                    {"data": '{"test": "data"}'})
+        conn.commit()
+
+    engine.dispose()
+
+    result = execute_query(test_db, 'SELECT data::text FROM test_data LIMIT 1;', [])
 
     assert result == '{"test": "data"}'
-    mock_conn.execute.assert_called_once()
 
 
-@patch('db_fwd.create_engine')
-def test_execute_query_with_params(mock_create_engine):
-    mock_engine = Mock()
-    mock_conn = Mock()
-    mock_result = Mock()
-    mock_row = ('{"period": "2024Q1"}',)
+def test_execute_query_with_params(test_db):
+    engine = create_engine(test_db)
 
-    mock_create_engine.return_value = mock_engine
-    mock_context = MagicMock()
-    mock_context.__enter__.return_value = mock_conn
-    mock_engine.connect.return_value = mock_context
-    mock_conn.execute.return_value = mock_result
-    mock_result.fetchone.return_value = mock_row
+    with engine.connect() as conn:
+        conn.execute(text("INSERT INTO test_data (data) VALUES (:data)"),
+                    {"data": '{"period": "2024Q1"}'})
+        conn.commit()
+
+    engine.dispose()
 
     result = execute_query(
-        'postgresql://localhost/test',
-        "SELECT data WHERE period = :param1;",
+        test_db,
+        "SELECT data::text FROM test_data WHERE data->>'period' = :param1;",
         ['2024Q1']
     )
 
     assert result == '{"period": "2024Q1"}'
-    call_args = mock_conn.execute.call_args
-    assert call_args[0][1] == {'param1': '2024Q1'}
 
 
-@patch('db_fwd.create_engine')
-def test_execute_query_no_results(mock_create_engine):
-    mock_engine = Mock()
-    mock_conn = Mock()
-    mock_result = Mock()
-
-    mock_create_engine.return_value = mock_engine
-    mock_context = MagicMock()
-    mock_context.__enter__.return_value = mock_conn
-    mock_engine.connect.return_value = mock_context
-    mock_conn.execute.return_value = mock_result
-    mock_result.fetchone.return_value = None
+def test_execute_query_no_results(test_db):
+    # Don't insert any data, table is empty
 
     with pytest.raises(ValueError, match="Query returned no results"):
-        execute_query('postgresql://localhost/test', 'SELECT data;', [])
+        execute_query(test_db, 'SELECT data FROM test_data WHERE id = 99999;', [])
 
 
-@patch('db_fwd.create_engine')
-def test_execute_query_multiple_fields(mock_create_engine):
-    mock_engine = Mock()
-    mock_conn = Mock()
-    mock_result = Mock()
-    mock_row = ('field1', 'field2')
+def test_execute_query_multiple_fields(test_db):
+    engine = create_engine(test_db)
 
-    mock_create_engine.return_value = mock_engine
-    mock_context = MagicMock()
-    mock_context.__enter__.return_value = mock_conn
-    mock_engine.connect.return_value = mock_context
-    mock_conn.execute.return_value = mock_result
-    mock_result.fetchone.return_value = mock_row
+    with engine.connect() as conn:
+        conn.execute(text("INSERT INTO test_data (data) VALUES (:data)"),
+                    {"data": '{"test": "data"}'})
+        conn.commit()
+
+    engine.dispose()
 
     with pytest.raises(ValueError, match="Query must return exactly one field"):
-        execute_query('postgresql://localhost/test', 'SELECT data, extra;', [])
+        execute_query(test_db, 'SELECT id, data FROM test_data;', [])
 
 
 @patch('db_fwd.create_engine')
@@ -102,49 +129,43 @@ def test_execute_query_database_error(mock_create_engine):
         execute_query('postgresql://localhost/test', 'SELECT data;', [])
 
 
-@patch('db_fwd.create_engine')
-def test_database_logger_init_no_url(mock_create_engine):
+def test_database_logger_init_no_url():
     logger = DatabaseLogger(None)
     assert logger.engine is None
-    mock_create_engine.assert_not_called()
 
 
-@patch('db_fwd.create_engine')
-def test_database_logger_init_with_url(mock_create_engine):
-    mock_engine = Mock()
-    mock_conn = Mock()
-
-    mock_create_engine.return_value = mock_engine
-    mock_context = MagicMock()
-    mock_context.__enter__.return_value = mock_conn
-    mock_engine.connect.return_value = mock_context
-
-    logger = DatabaseLogger('postgresql://localhost/logs')
+def test_database_logger_init_with_url(test_log_db):
+    logger = DatabaseLogger(test_log_db)
 
     assert logger.engine is not None
-    mock_create_engine.assert_called_once()
-    mock_conn.execute.assert_called_once()  # CREATE TABLE
+
+    engine = create_engine(test_log_db)
+    with engine.connect() as conn:
+        result = conn.execute(text(
+            "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='db_fwd_logs')"
+        ))
+        exists = result.fetchone()[0]
+        assert exists is True
+
+    engine.dispose()
 
 
-@patch('db_fwd.create_engine')
-def test_database_logger_log(mock_create_engine):
-    mock_engine = Mock()
-    mock_conn = Mock()
-
-    mock_create_engine.return_value = mock_engine
-    mock_context = MagicMock()
-    mock_context.__enter__.return_value = mock_conn
-    mock_engine.connect.return_value = mock_context
-
-    logger = DatabaseLogger('postgresql://localhost/logs')
+def test_database_logger_log(test_log_db):
+    logger = DatabaseLogger(test_log_db)
     logger.log('INFO', 'Test message')
 
-    # Should be called twice: once for CREATE TABLE, once for INSERT
-    assert mock_conn.execute.call_count == 2
+    engine = create_engine(test_log_db)
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT level, message FROM db_fwd_logs"))
+        row = result.fetchone()
+        assert row is not None
+        assert row[0] == 'INFO'
+        assert row[1] == 'Test message'
+
+    engine.dispose()
 
 
-@patch('db_fwd.create_engine')
-def test_database_logger_log_no_engine(mock_create_engine):
+def test_database_logger_log_no_engine():
     logger = DatabaseLogger(None)
     logger.log('INFO', 'Test message')  # Should not raise
 
@@ -166,61 +187,52 @@ def test_database_logger_log_error(mock_create_engine):
     logger.log('INFO', 'Test message')
 
 
-@patch('db_fwd.create_engine')
-def test_execute_query_sql_injection_safe(mock_create_engine):
-    mock_engine = Mock()
-    mock_conn = Mock()
-    mock_result = Mock()
-    mock_row = ('{"data": "safe"}',)
+def test_execute_query_sql_injection_safe(test_db):
+    engine = create_engine(test_db)
 
-    mock_create_engine.return_value = mock_engine
-    mock_context = MagicMock()
-    mock_context.__enter__.return_value = mock_conn
-    mock_engine.connect.return_value = mock_context
-    mock_conn.execute.return_value = mock_result
-    mock_result.fetchone.return_value = mock_row
+    with engine.connect() as conn:
+        conn.execute(text("INSERT INTO test_data (id, data) VALUES (1, :data)"),
+                    {"data": '{"data": "safe"}'})
+        conn.commit()
 
-    malicious_param = "'; DROP TABLE users; --"
+    engine.dispose()
 
-    result = execute_query(
-        'postgresql://localhost/test',
-        "SELECT data WHERE id = :param1;",
-        [malicious_param]
-    )
+    malicious_param = "'; DROP TABLE test_data; --"
 
-    # Verify the parameter was passed safely, not interpolated into the query
-    call_args = mock_conn.execute.call_args
-    # First argument should be the text object with the query
-    assert ":param1" in str(call_args[0][0])
-    # Second argument should be the params dict with the malicious string safely contained
-    assert call_args[0][1] == {'param1': "'; DROP TABLE users; --"}
-    assert result == '{"data": "safe"}'
+    try:
+        execute_query(
+            test_db,
+            "SELECT data FROM test_data WHERE data->>'data' = :param1;",
+            [malicious_param]
+        )
+    except ValueError:
+        pass  # Expected - no results found
+
+    engine = create_engine(test_db)
+    with engine.connect() as conn:
+        result = conn.execute(text(
+            "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='test_data')"
+        ))
+        exists = result.fetchone()[0]
+        assert exists is True, "Table should still exist - SQL injection was prevented"
+
+    engine.dispose()
 
 
-@patch('db_fwd.create_engine')
-def test_execute_query_multiple_params(mock_create_engine):
-    mock_engine = Mock()
-    mock_conn = Mock()
-    mock_result = Mock()
-    mock_row = ('{"result": "success"}',)
+def test_execute_query_multiple_params(test_db):
+    engine = create_engine(test_db)
 
-    mock_create_engine.return_value = mock_engine
-    mock_context = MagicMock()
-    mock_context.__enter__.return_value = mock_conn
-    mock_engine.connect.return_value = mock_context
-    mock_conn.execute.return_value = mock_result
-    mock_result.fetchone.return_value = mock_row
+    with engine.connect() as conn:
+        conn.execute(text("INSERT INTO test_data (data) VALUES (:data)"),
+                    {"data": '{"category": "category1", "period": "2024Q1", "status": "active"}'})
+        conn.commit()
+
+    engine.dispose()
 
     result = execute_query(
-        'postgresql://localhost/test',
-        "SELECT data WHERE category = :param1 AND period = :param2 AND status = :param3;",
+        test_db,
+        "SELECT data::text FROM test_data WHERE data->>'category' = :param1 AND data->>'period' = :param2 AND data->>'status' = :param3;",
         ['category1', '2024Q1', 'active']
     )
 
-    call_args = mock_conn.execute.call_args
-    assert call_args[0][1] == {
-        'param1': 'category1',
-        'param2': '2024Q1',
-        'param3': 'active'
-    }
-    assert result == '{"result": "success"}'
+    assert json.loads(result) == {"category": "category1", "period": "2024Q1", "status": "active"}
