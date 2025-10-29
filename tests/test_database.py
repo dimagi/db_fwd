@@ -157,7 +157,7 @@ def test_database_logger_init_with_url(test_log_db):
 
     engine = create_engine(test_log_db)
     with engine.connect() as conn:
-        result = conn.execute(
+        exists = conn.execute(
             text(
                 """
                 SELECT EXISTS (
@@ -167,8 +167,7 @@ def test_database_logger_init_with_url(test_log_db):
                 )
                 """
             )
-        )
-        exists = result.fetchone()[0]
+        ).scalar()
         assert exists is True
 
     engine.dispose()
@@ -239,7 +238,7 @@ def test_execute_query_sql_injection_safe(test_db):
 
     engine = create_engine(test_db)
     with engine.connect() as conn:
-        result = conn.execute(
+        exists = conn.execute(
             text(
                 """
                 SELECT EXISTS (
@@ -249,8 +248,7 @@ def test_execute_query_sql_injection_safe(test_db):
                 )
                 """
             )
-        )
-        exists = result.fetchone()[0]
+        ).scalar()
         assert (
             exists is True
         ), 'Table should still exist - SQL injection was prevented'

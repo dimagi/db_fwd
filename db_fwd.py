@@ -42,14 +42,18 @@ class Config:
         with open(config_path, 'rb') as f:
             self.config = tomllib.load(f)
 
+    def _get_db_fwd(self):
+        return self.config.get('db_fwd', {})
+
     def get_log_level(self):
-        return self.config.get('db_fwd', {}).get('log_level', 'info')
+        return self._get_db_fwd().get('log_level', 'info')
 
     def get_log_file(self):
-        return self.config.get('db_fwd', {}).get('log_file', 'db_fwd.log')
+        return self._get_db_fwd().get('log_file', 'db_fwd.log')
 
-    def get_log_db_url(self) -> Optional[str]:
-        return self.config.get('db_fwd', {}).get('log_db_url')
+    def get_log_db_url(self) -> str | None:
+        log_db_url: str | None = self._get_db_fwd().get('log_db_url')
+        return log_db_url
 
     def get_db_url(self, query_name=None):
         # Check query-specific db_url first
