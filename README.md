@@ -4,11 +4,22 @@ db_fwd
 Forwards a SQL query result to a web API endpoint.
 
 
+Installation
+------------
+
+1. [Install uv](https://docs.astral.sh/uv/getting-started/installation/).
+
+2. Clone this repository:
+   ```shell
+   $ git clone https://github.com/dimagi/db_fwd.git
+   $ cd db_fwd/
+   ```
+
 Usage
 -----
 
 ```shell
-$ ./db_fwd.py \
+$ uv run db_fwd.py \
     --log-level [none,info,debug] \
     --log-file <filename> \
     --config-file <filename> \
