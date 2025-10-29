@@ -10,18 +10,20 @@ dependencies = [
     "psycopg2-binary>=2.9.0",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0.0",
-    "ruff>=0.14.2",
-]
-
 [project.scripts]
 db_fwd = "db_fwd:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18.2",
+    "types-requests",
+    "pytest>=8.0.0",
+    "ruff>=0.14.2",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -34,3 +36,25 @@ line-length = 79
 
 [tool.ruff.format]
 quote-style = "single"
+
+[tool.mypy]
+# Check configuration
+warn_unused_configs = 'True'
+
+# Type checking
+disallow_any_generics = 'True'
+check_untyped_defs = 'True'
+warn_unused_ignores = 'True'
+warn_redundant_casts = 'True'
+warn_return_any = 'True'
+strict_equality = 'True'
+
+# Parse but don't check imported libraries
+follow_imports = 'silent'
+ignore_missing_imports = 'True'
+
+# Non-typing checks
+warn_unreachable = 'True'
+
+# Reporting
+pretty = 'True'
