@@ -7,7 +7,7 @@ See @README.md for purpose, usage and configuration.
 See @DESIGN.md for design context.
 
 
-## Comands
+## Commands
 
 The following commands assume that the virtual environment is active.
 
