@@ -238,16 +238,14 @@ query = "SELECT 1;"
 
 def test_get_api_credentials_from_queries(sample_config_file):
     config = Config(sample_config_file)
-    username, password = config.get_api_credentials('test_query')
-    assert username == 'test_user'
-    assert password == 'test_pass'
+    creds = config.get_api_credentials('test_query')
+    assert creds == ('test_user', 'test_pass')
 
 
 def test_get_api_credentials_query_specific(sample_config_file):
     config = Config(sample_config_file)
-    username, password = config.get_api_credentials('query_with_db')
-    assert username == 'other_user'
-    assert password == 'other_pass'
+    creds = config.get_api_credentials('query_with_db')
+    assert creds == ('other_user', 'other_pass')
 
 
 def test_get_api_credentials_from_env():
@@ -269,9 +267,8 @@ api_url = "https://example.com/api"
         os.environ['DB_FWD_API_USERNAME'] = 'env_user'
         os.environ['DB_FWD_API_PASSWORD'] = 'env_pass'
         config = Config(temp_path)
-        username, password = config.get_api_credentials('test')
-        assert username == 'env_user'
-        assert password == 'env_pass'
+        creds = config.get_api_credentials('test')
+        assert creds == ('env_user', 'env_pass')
     finally:
         Path(temp_path).unlink()
         if 'DB_FWD_API_USERNAME' in os.environ:
@@ -297,8 +294,7 @@ api_url = "https://example.com/api"
 
     try:
         config = Config(temp_path)
-        username, password = config.get_api_credentials('test')
-        assert username is None
-        assert password is None
+        creds = config.get_api_credentials('test')
+        assert creds is None
     finally:
         Path(temp_path).unlink()
