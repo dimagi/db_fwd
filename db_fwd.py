@@ -102,7 +102,7 @@ class Config:
 
     def get_api_credentials(
         self, query_name: Optional[str] = None
-    ) -> CredentialsType:
+    ) -> CredentialsType | None:
         username = password = None
 
         # Check query-specific credentials
@@ -126,7 +126,7 @@ class Config:
         if not password:
             password = os.environ.get('DB_FWD_API_PASSWORD')
 
-        return username, password
+        return (username, password) if username and password else None
 
 
 class DatabaseLogger:
@@ -230,14 +230,9 @@ def execute_query(db_url, query, params):
 def forward_to_api(
     api_url: str,
     payload: Any,
-    username: UsernameType,
-    password: PasswordType,
+    credentials: Optional[CredentialsType],
     db_logger: DatabaseLogger,
 ) -> None:
-    auth = None
-    if username and password:
-        auth = (username, password)
-
     logging.info(f'Forwarding to API: {api_url}')
     db_logger.log('DEBUG', f'API Request - URL: {api_url}, Payload: {payload}')
 
@@ -245,7 +240,7 @@ def forward_to_api(
         response = requests.post(
             api_url,
             json=payload,
-            auth=auth,
+            auth=credentials,
             headers={'Content-Type': 'application/json'},
         )
 
@@ -307,13 +302,13 @@ def main():
         db_url = config.get_db_url(args.query_name)
         query = config.get_query(args.query_name)
         api_url = config.get_api_url(args.query_name)
-        username, password = config.get_api_credentials(args.query_name)
+        creds = config.get_api_credentials(args.query_name)
 
         result = execute_query(db_url, query, args.query_params)
         logging.info(f'Query result: {result}')
         db_logger.log('DEBUG', f'Query result: {result}')
 
-        forward_to_api(api_url, result, username, password, db_logger)
+        forward_to_api(api_url, result, creds, db_logger)
 
         logging.info('Completed successfully')
         db_logger.log('INFO', 'Completed successfully')

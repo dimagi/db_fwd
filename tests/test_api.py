@@ -22,7 +22,7 @@ def test_forward_to_api_success(mock_post, mock_db_logger):
 
     payload = {'test': 'data'}
     forward_to_api(
-        'https://example.com/api', payload, 'user', 'pass', mock_db_logger
+        'https://example.com/api', payload, ('user', 'pass'), mock_db_logger
     )
 
     mock_post.assert_called_once_with(
@@ -43,9 +43,7 @@ def test_forward_to_api_no_auth(mock_post, mock_db_logger):
     mock_post.return_value = mock_response
 
     payload = {'test': 'data'}
-    forward_to_api(
-        'https://example.com/api', payload, None, None, mock_db_logger
-    )
+    forward_to_api('https://example.com/api', payload, None, mock_db_logger)
 
     mock_post.assert_called_once_with(
         'https://example.com/api',
@@ -53,24 +51,6 @@ def test_forward_to_api_no_auth(mock_post, mock_db_logger):
         auth=None,
         headers={'Content-Type': 'application/json'},
     )
-
-
-@patch('db_fwd.requests.post')
-def test_forward_to_api_partial_auth(mock_post, mock_db_logger):
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.text = '{"success": true}'
-    mock_post.return_value = mock_response
-
-    payload = {'test': 'data'}
-    forward_to_api(
-        'https://example.com/api', payload, 'user', None, mock_db_logger
-    )
-
-    # Should not use auth if password is missing
-    mock_post.assert_called_once()
-    call_kwargs = mock_post.call_args[1]
-    assert call_kwargs['auth'] is None
 
 
 @patch('db_fwd.requests.post')
@@ -87,7 +67,10 @@ def test_forward_to_api_http_error(mock_post, mock_db_logger):
 
     with pytest.raises(requests.exceptions.HTTPError):
         forward_to_api(
-            'https://example.com/api', payload, 'user', 'pass', mock_db_logger
+            'https://example.com/api',
+            payload,
+            ('user', 'pass'),
+            mock_db_logger,
         )
 
     error_logged = any(
@@ -107,7 +90,10 @@ def test_forward_to_api_connection_error(mock_post, mock_db_logger):
 
     with pytest.raises(requests.exceptions.ConnectionError):
         forward_to_api(
-            'https://example.com/api', payload, 'user', 'pass', mock_db_logger
+            'https://example.com/api',
+            payload,
+            ('user', 'pass'),
+            mock_db_logger,
         )
 
 
@@ -119,7 +105,10 @@ def test_forward_to_api_timeout(mock_post, mock_db_logger):
 
     with pytest.raises(requests.exceptions.Timeout):
         forward_to_api(
-            'https://example.com/api', payload, 'user', 'pass', mock_db_logger
+            'https://example.com/api',
+            payload,
+            ('user', 'pass'),
+            mock_db_logger,
         )
 
 
@@ -133,7 +122,7 @@ def test_forward_to_api_json_payload(mock_post, mock_db_logger):
     payload = '{"period": "2024Q1", "data": [1, 2, 3]}'
 
     forward_to_api(
-        'https://example.com/api', payload, 'user', 'pass', mock_db_logger
+        'https://example.com/api', payload, ('user', 'pass'), mock_db_logger
     )
 
     call_kwargs = mock_post.call_args[1]
@@ -149,7 +138,7 @@ def test_forward_to_api_logging(mock_post, mock_db_logger):
 
     payload = {'test': 'data'}
     forward_to_api(
-        'https://example.com/api', payload, 'user', 'pass', mock_db_logger
+        'https://example.com/api', payload, ('user', 'pass'), mock_db_logger
     )
 
     debug_calls = [
