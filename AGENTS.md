@@ -33,15 +33,18 @@ Use docstrings for doctests for functions and methods where a doctest
 can demonstrate usage in a simple way. Doctests can augment but should
 not replace unit tests. Run doctests from an appropriate test module.
 
-Don't use docstrings for test functions if the function's name explains
-what it is testing. 
+Don't use docstrings for test functions. The function's name should
+explain what it is testing.
 
-Use type hints when it would be useful to know a parameter's class, or
-where a parameter's type, or a function- or method's return value, is
-not obvious from its name. If you do use a type hint in a function or
-method definition, then include type hints for all its parameters and
-its return value.
+Only use type hints when:
 
-Use type aliases (e.g.
+* it would be useful to know a parameter's class,
+* or where a parameter's type is not obvious from its name,
+* or a function's or method's return value is not obvious from the
+  function's or method's name.
+
+If you do use a type hint in a function or method definition, then
+include type hints for all its parameters and its return value, for the
+sake of readability. Use type aliases (e.g.
 `type CredentialsType = tuple[UsernameType, PasswordType]`) where it
 would clarify the type or purpose of a variable.
