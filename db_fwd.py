@@ -19,8 +19,8 @@ import requests
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
-type UsernameType = Optional[str]
-type PasswordType = Optional[str]
+type UsernameType = str
+type PasswordType = str
 type CredentialsType = tuple[UsernameType, PasswordType]
 
 

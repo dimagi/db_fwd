@@ -42,5 +42,6 @@ not obvious from its name. If you do use a type hint in a function or
 method definition, then include type hints for all its parameters and
 its return value.
 
-Use type aliases (e.g. `type UsernameType = Optional[str]`) where it
-would clarify the usage of a type.
+Use type aliases (e.g.
+`type CredentialsType = tuple[UsernameType, PasswordType]`) where it
+would clarify the type or purpose of a variable.
