@@ -1,0 +1,39 @@
+name: Build Windows executable
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Build executable with PyInstaller
+        run: |
+          uv run pyinstaller --onefile --name db_fwd --console db_fwd.py
+
+      - name: Upload executable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-fwd-exe
+          path: dist/db_fwd.exe
+          retention-days: 30

@@ -7,6 +7,9 @@ Forwards a SQL query result to a web API endpoint.
 Installation
 ------------
 
+<details open>
+<summary><b>Linux/Mac</b></summary>
+
 1. [Install uv](https://docs.astral.sh/uv/getting-started/installation/).
 
 2. Clone this repository:
@@ -15,8 +18,30 @@ Installation
    $ cd db_fwd/
    ```
 
+</details>
+
+<details>
+<summary><b>Windows</b></summary>
+
+Download the Windows executable:
+
+1. Open https://github.com/dimagi/db_fwd in your browser.
+2. Navigate to the "Actions" tab.
+3. Open the latest workflow run, or select "Build Windows executable"
+   and click "Run workflow" if no workflow runs are listed.
+4. Download the `db-fwd-exe` artifact.
+5. Unzip `db-fwd-exe.zip` and extract `db_fwd.exe`.
+
+No Python installation required.
+
+</details>
+
+
 Usage
 -----
+
+<details open>
+<summary><b>Linux/Mac</b></summary>
 
 ```shell
 $ uv run db_fwd.py \
@@ -34,6 +59,19 @@ The log file given on the command line overrides the value set in the
 config file. If not specified, the default value is "db_fwd.log".
 
 The config file defaults to "db_fwd.toml".
+
+</details>
+
+<details>
+<summary><b>Windows</b></summary>
+
+Using the Windows executable, `db_fwd.exe`:
+
+```shell
+> db_fwd.exe query_name [query_param] [query_param] etc.
+```
+
+</details>
 
 
 Environment Variables
@@ -54,6 +92,7 @@ Currently basic auth is the only API authentication method that
 Configuration File
 ------------------
 
+**db_fwd** looks for a configuration file named "db_fwd.toml" by default.
 The configuration file is given in TOML format. This file can contain
 passwords, and should only be readable by the user that **db_fwd** will
 run as.
