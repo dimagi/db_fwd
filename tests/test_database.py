@@ -11,7 +11,7 @@ from unittest.mock import Mock, MagicMock, patch
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
-from db_fwd import execute_query, DatabaseLogger
+from db_fwd import execute_query, DatabaseHandler
 
 TEST_DB_URL = 'postgresql://postgres:postgres@localhost:5432/postgres'
 
@@ -145,15 +145,10 @@ def test_execute_query_database_error(mock_create_engine):
         execute_query('postgresql://localhost/test', 'SELECT data;', [])
 
 
-def test_database_logger_init_no_url():
-    logger = DatabaseLogger(None)
-    assert logger.engine is None
+def test_database_handler_init(test_log_db):
+    handler = DatabaseHandler(test_log_db)
 
-
-def test_database_logger_init_with_url(test_log_db):
-    logger = DatabaseLogger(test_log_db)
-
-    assert logger.engine is not None
+    assert handler.engine is not None
 
     engine = create_engine(test_log_db)
     with engine.connect() as conn:
@@ -173,9 +168,16 @@ def test_database_logger_init_with_url(test_log_db):
     engine.dispose()
 
 
-def test_database_logger_log(test_log_db):
-    logger = DatabaseLogger(test_log_db)
-    logger.log('INFO', 'Test message')
+def test_database_handler_emit(test_log_db):
+    import logging
+
+    handler = DatabaseHandler(test_log_db)
+
+    logger = logging.getLogger('test_logger')
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+    logger.info('Test message')
 
     engine = create_engine(test_log_db)
     with engine.connect() as conn:
@@ -183,18 +185,16 @@ def test_database_logger_log(test_log_db):
         row = result.fetchone()
         assert row is not None
         assert row[0] == 'INFO'
-        assert row[1] == 'Test message'
+        assert 'Test message' in row[1]
 
     engine.dispose()
-
-
-def test_database_logger_log_no_engine():
-    logger = DatabaseLogger(None)
-    logger.log('INFO', 'Test message')  # Should not raise
+    logger.removeHandler(handler)
 
 
 @patch('db_fwd.create_engine')
-def test_database_logger_log_error(mock_create_engine):
+def test_database_handler_emit_error(mock_create_engine):
+    import logging
+
     mock_engine = Mock()
     mock_conn = Mock()
 
@@ -207,10 +207,16 @@ def test_database_logger_log_error(mock_create_engine):
         SQLAlchemyError('Log insert failed'),
     ]
 
-    logger = DatabaseLogger('postgresql://localhost/logs')
+    handler = DatabaseHandler('postgresql://localhost/logs')
+
+    logger = logging.getLogger('test_error_logger')
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
     # This should not raise an exception
-    logger.log('INFO', 'Test message')
+    logger.info('Test message')
+
+    logger.removeHandler(handler)
 
 
 def test_execute_query_sql_injection_safe(test_db):

@@ -129,20 +129,15 @@ class Config:
         return (username, password) if username and password else None
 
 
-class DatabaseLogger:
-    """Logger that writes to a database table."""
+class DatabaseHandler(logging.Handler):
+    """Logging handler that writes to a database table."""
 
-    def __init__(self, db_url: Optional[str]):
-        self.db_url = db_url
-        self.engine = None
-        if db_url:
-            self.engine = create_engine(db_url)
-            self._ensure_table()
+    def __init__(self, db_url: str):
+        super().__init__()
+        self.engine = create_engine(db_url)
+        self._ensure_table()
 
     def _ensure_table(self):
-        if not self.engine:
-            return
-
         create_table_sql = """
         CREATE TABLE IF NOT EXISTS db_fwd_logs (
             id SERIAL PRIMARY KEY,
@@ -156,10 +151,7 @@ class DatabaseLogger:
             conn.execute(text(create_table_sql))
             conn.commit()
 
-    def log(self, level_name, message):
-        if not self.engine:
-            return
-
+    def emit(self, record):
         insert_sql = """
         INSERT INTO db_fwd_logs (level, message)
         VALUES (:level, :message)
@@ -168,29 +160,36 @@ class DatabaseLogger:
         try:
             with self.engine.connect() as conn:
                 conn.execute(
-                    text(insert_sql), {'level': level_name, 'message': message}
+                    text(insert_sql),
+                    {'level': record.levelname, 'message': self.format(record)},
                 )
                 conn.commit()
-        except SQLAlchemyError as e:
-            # Don't fail the main operation if logging fails
-            logging.error(f'Failed to log to database: {e}')
+        except SQLAlchemyError:
+            self.handleError(record)
 
 
-def set_up_logging(log_level_name, log_filename):
+def set_up_logging(log_level_name, log_filename, log_db_url: Optional[str]):
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)  # Set to DEBUG for database handler
+    logger.handlers.clear()
+
     level_map = {
         'none': logging.CRITICAL + 1,
         'info': logging.INFO,
         'debug': logging.DEBUG,
     }
-
-    level = level_map.get(log_level_name.lower(), logging.INFO)
-
-    logging.basicConfig(
-        level=level,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[logging.FileHandler(log_filename)],
-        force=True,
+    file_level = level_map.get(log_level_name.lower(), logging.INFO)
+    file_handler = logging.FileHandler(log_filename)
+    file_handler.setLevel(file_level)
+    file_handler.setFormatter(
+        logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     )
+    logger.addHandler(file_handler)
+
+    if log_db_url:
+        db_handler = DatabaseHandler(log_db_url)
+        db_handler.setLevel(logging.DEBUG)
+        logger.addHandler(db_handler)
 
 
 def execute_query(db_url, query, params):
@@ -231,10 +230,9 @@ def forward_to_api(
     api_url: str,
     payload: Any,
     credentials: Optional[CredentialsType],
-    db_logger: DatabaseLogger,
 ) -> None:
     logging.info(f'Forwarding to API: {api_url}')
-    db_logger.log('DEBUG', f'API Request - URL: {api_url}, Payload: {payload}')
+    logging.debug(f'API Request - URL: {api_url}, Payload: {payload}')
 
     try:
         response = requests.post(
@@ -245,16 +243,14 @@ def forward_to_api(
         )
 
         logging.info(f'API Response - Status: {response.status_code}')
-        db_logger.log(
-            'DEBUG',
-            f'API Response - Status: {response.status_code}, Body: {response.text}',
+        logging.debug(
+            f'API Response - Status: {response.status_code}, Body: {response.text}'
         )
 
         response.raise_for_status()
 
     except requests.exceptions.RequestException as e:
         logging.error(f'API request failed: {e}')
-        db_logger.log('ERROR', f'API request failed: {e}')
         raise
 
 
@@ -291,13 +287,10 @@ def main():
 
         log_level = args.log_level or config.get_log_level()
         log_file = args.log_file or config.get_log_file()
-        set_up_logging(log_level, log_file)
-
         log_db_url = config.get_log_db_url()
-        db_logger = DatabaseLogger(log_db_url)
+        set_up_logging(log_level, log_file, log_db_url)
 
         logging.info(f'Starting db_fwd for query: {args.query_name}')
-        db_logger.log('INFO', f'Starting db_fwd for query: {args.query_name}')
 
         db_url = config.get_db_url(args.query_name)
         query = config.get_query(args.query_name)
@@ -305,18 +298,14 @@ def main():
         creds = config.get_api_credentials(args.query_name)
 
         result = execute_query(db_url, query, args.query_params)
-        logging.info(f'Query result: {result}')
-        db_logger.log('DEBUG', f'Query result: {result}')
+        logging.debug(f'Query result: {result}')
 
-        forward_to_api(api_url, result, creds, db_logger)
+        forward_to_api(api_url, result, creds)
 
         logging.info('Completed successfully')
-        db_logger.log('INFO', 'Completed successfully')
 
     except Exception as e:
         logging.error(f'Error: {e}')
-        if 'db_logger' in locals():
-            db_logger.log('ERROR', str(e))
         sys.exit(1)
 
 

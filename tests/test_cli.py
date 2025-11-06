@@ -72,13 +72,11 @@ def test_parse_args_all_options():
 
 @patch('db_fwd.forward_to_api')
 @patch('db_fwd.execute_query')
-@patch('db_fwd.DatabaseLogger')
 @patch('db_fwd.set_up_logging')
 @patch('db_fwd.Config')
 def test_main_success(
     mock_config_class,
     mock_setup_logging,
-    mock_db_logger_class,
     mock_execute_query,
     mock_forward_to_api,
 ):
@@ -92,16 +90,13 @@ def test_main_success(
     mock_config.get_api_credentials.return_value = ('user', 'pass')
     mock_config_class.return_value = mock_config
 
-    mock_db_logger = Mock()
-    mock_db_logger_class.return_value = mock_db_logger
-
     mock_execute_query.return_value = '{"test": "data"}'
 
     with patch('sys.argv', ['db_fwd.py', 'test_query']):
         main()
 
     mock_config_class.assert_called_once_with('db_fwd.toml')
-    mock_setup_logging.assert_called_once_with('info', 'test.log')
+    mock_setup_logging.assert_called_once_with('info', 'test.log', None)
     mock_execute_query.assert_called_once()
     mock_forward_to_api.assert_called_once()
 
@@ -117,13 +112,11 @@ def test_main_config_file_not_found(mock_config_class):
 
 
 @patch('db_fwd.execute_query')
-@patch('db_fwd.DatabaseLogger')
 @patch('db_fwd.set_up_logging')
 @patch('db_fwd.Config')
 def test_main_query_error(
     mock_config_class,
     mock_setup_logging,
-    mock_db_logger_class,
     mock_execute_query,
 ):
     mock_config = Mock()
@@ -136,9 +129,6 @@ def test_main_query_error(
     mock_config.get_api_credentials.return_value = ('user', 'pass')
     mock_config_class.return_value = mock_config
 
-    mock_db_logger = Mock()
-    mock_db_logger_class.return_value = mock_db_logger
-
     mock_execute_query.side_effect = ValueError('Query failed')
 
     with patch('sys.argv', ['db_fwd.py', 'test_query']):
@@ -149,13 +139,11 @@ def test_main_query_error(
 
 @patch('db_fwd.forward_to_api')
 @patch('db_fwd.execute_query')
-@patch('db_fwd.DatabaseLogger')
 @patch('db_fwd.set_up_logging')
 @patch('db_fwd.Config')
 def test_main_api_error(
     mock_config_class,
     mock_setup_logging,
-    mock_db_logger_class,
     mock_execute_query,
     mock_forward_to_api,
 ):
@@ -169,9 +157,6 @@ def test_main_api_error(
     mock_config.get_api_credentials.return_value = ('user', 'pass')
     mock_config_class.return_value = mock_config
 
-    mock_db_logger = Mock()
-    mock_db_logger_class.return_value = mock_db_logger
-
     mock_execute_query.return_value = '{"test": "data"}'
     mock_forward_to_api.side_effect = Exception('API failed')
 
@@ -183,13 +168,11 @@ def test_main_api_error(
 
 @patch('db_fwd.forward_to_api')
 @patch('db_fwd.execute_query')
-@patch('db_fwd.DatabaseLogger')
 @patch('db_fwd.set_up_logging')
 @patch('db_fwd.Config')
 def test_main_with_query_params(
     mock_config_class,
     mock_setup_logging,
-    mock_db_logger_class,
     mock_execute_query,
     mock_forward_to_api,
 ):
@@ -203,9 +186,6 @@ def test_main_with_query_params(
     mock_config.get_api_credentials.return_value = ('user', 'pass')
     mock_config_class.return_value = mock_config
 
-    mock_db_logger = Mock()
-    mock_db_logger_class.return_value = mock_db_logger
-
     mock_execute_query.return_value = '{"test": "data"}'
 
     with patch('sys.argv', ['db_fwd.py', 'test_query', '2024Q1']):
@@ -218,13 +198,11 @@ def test_main_with_query_params(
 
 @patch('db_fwd.forward_to_api')
 @patch('db_fwd.execute_query')
-@patch('db_fwd.DatabaseLogger')
 @patch('db_fwd.set_up_logging')
 @patch('db_fwd.Config')
 def test_main_with_cli_overrides(
     mock_config_class,
     mock_setup_logging,
-    mock_db_logger_class,
     mock_execute_query,
     mock_forward_to_api,
 ):
@@ -237,9 +215,6 @@ def test_main_with_cli_overrides(
     mock_config.get_api_url.return_value = 'https://example.com/api'
     mock_config.get_api_credentials.return_value = ('user', 'pass')
     mock_config_class.return_value = mock_config
-
-    mock_db_logger = Mock()
-    mock_db_logger_class.return_value = mock_db_logger
 
     mock_execute_query.return_value = '{"test": "data"}'
 
@@ -256,4 +231,4 @@ def test_main_with_cli_overrides(
     ):
         main()
 
-    mock_setup_logging.assert_called_once_with('debug', 'custom.log')
+    mock_setup_logging.assert_called_once_with('debug', 'custom.log', None)
