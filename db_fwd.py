@@ -234,24 +234,18 @@ def forward_to_api(
     logging.info(f'Forwarding to API: {api_url}')
     logging.debug(f'API Request - URL: {api_url}, Payload: {payload}')
 
-    try:
-        response = requests.post(
-            api_url,
-            json=payload,
-            auth=credentials,
-            headers={'Content-Type': 'application/json'},
-        )
-
-        logging.info(f'API Response - Status: {response.status_code}')
-        logging.debug(
-            f'API Response - Status: {response.status_code}, Body: {response.text}'
-        )
-
-        response.raise_for_status()
-
-    except requests.exceptions.RequestException as e:
-        logging.error(f'API request failed: {e}')
-        raise
+    response = requests.post(
+        api_url,
+        json=payload,
+        auth=credentials,
+        headers={'Content-Type': 'application/json'},
+    )
+    logging.info(f'API Response - Status: {response.status_code}')
+    logging.debug(
+        f'API Response - Status: {response.status_code}, '
+        f'Body: {response.text}'
+    )
+    response.raise_for_status()
 
 
 def parse_args() -> argparse.Namespace:
