@@ -212,10 +212,15 @@ def execute_query(db_url, query, params):
     try:
         with engine.connect() as conn:
             result = conn.execute(text(query), param_dict)
-            row = result.fetchone()
+            rows = result.fetchmany(2)
 
-            if not row:
+            if not rows:
                 raise ValueError('Query returned no results')
+
+            if len(rows) > 1:
+                raise ValueError('Query returned more than one row')
+
+            row = rows[0]
 
             if len(row) != 1:
                 raise ValueError('Query must return exactly one field')

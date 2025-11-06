@@ -130,6 +130,26 @@ def test_execute_query_multiple_fields(test_db):
         execute_query(test_db, 'SELECT id, data FROM test_data;', [])
 
 
+def test_execute_query_multiple_rows(test_db):
+    engine = create_engine(test_db)
+
+    with engine.connect() as conn:
+        conn.execute(
+            text('INSERT INTO test_data (data) VALUES (:data)'),
+            {'data': '{"test": "data1"}'},
+        )
+        conn.execute(
+            text('INSERT INTO test_data (data) VALUES (:data)'),
+            {'data': '{"test": "data2"}'},
+        )
+        conn.commit()
+
+    engine.dispose()
+
+    with pytest.raises(ValueError, match='Query returned more than one row'):
+        execute_query(test_db, 'SELECT data FROM test_data;', [])
+
+
 @patch('db_fwd.create_engine')
 def test_execute_query_database_error(mock_create_engine):
     mock_engine = Mock()

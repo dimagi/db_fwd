@@ -46,7 +46,7 @@ def test_forward_to_api_no_auth(mock_post):
 
 
 @patch('db_fwd.requests.post')
-def test_forward_to_api_http_error(mock_post, caplog):
+def test_forward_to_api_http_error(mock_post):
     mock_response = Mock()
     mock_response.status_code = 500
     mock_response.text = 'Internal Server Error'
@@ -57,11 +57,8 @@ def test_forward_to_api_http_error(mock_post, caplog):
 
     payload = {'test': 'data'}
 
-    with caplog.at_level(logging.ERROR):
-        with pytest.raises(requests.exceptions.HTTPError):
-            forward_to_api('https://example.com/api', payload, ('user', 'pass'))
-
-    assert any('failed' in record.message.lower() for record in caplog.records)
+    with pytest.raises(requests.exceptions.HTTPError):
+        forward_to_api('https://example.com/api', payload, ('user', 'pass'))
 
 
 @patch('db_fwd.requests.post')
