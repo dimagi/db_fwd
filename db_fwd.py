@@ -169,18 +169,18 @@ class DatabaseHandler(logging.Handler):
 
 
 def set_up_logging(log_level_name, log_filename, log_db_url: Optional[str]):
+    if log_level_name.lower() == 'none':
+        log_level = logging.CRITICAL + 1
+    else:
+        name_to_level = logging.getLevelNamesMapping()
+        if log_level_name.upper() not in name_to_level:
+            raise ValueError(f'Invalid log level {log_level_name!r}')
+        log_level = name_to_level[log_level_name.upper()]
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)  # Set to DEBUG for database handler
+    logger.setLevel(log_level)
     logger.handlers.clear()
 
-    level_map = {
-        'none': logging.CRITICAL + 1,
-        'info': logging.INFO,
-        'debug': logging.DEBUG,
-    }
-    file_level = level_map.get(log_level_name.lower(), logging.INFO)
     file_handler = logging.FileHandler(log_filename)
-    file_handler.setLevel(file_level)
     file_handler.setFormatter(
         logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     )
@@ -188,7 +188,6 @@ def set_up_logging(log_level_name, log_filename, log_db_url: Optional[str]):
 
     if log_db_url:
         db_handler = DatabaseHandler(log_db_url)
-        db_handler.setLevel(logging.DEBUG)
         logger.addHandler(db_handler)
 
 

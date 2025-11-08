@@ -144,15 +144,14 @@ api_url = 'https://dhis2.example.com/api/dataset/efgh5678/'
 #### Logging
 
 If not specified, `log_level` defaults to "info". Valid values are
-"none", "info" and "debug".
+"none", "info" and "debug". The log level applies to both the log file
+and the log database.
 
 If not specified, `log_file` defaults to "db_fwd.log" in the same
 directory as `db_fwd.py`.
 
 `log_db_url` is optional. It stores a database URL. If it is specified
-then debug-level logs will be stored in the "db_fwd_logs" table. (Log
-level is _always debug_ regardless of the `log_level` setting used for
-`log_file`. This is so that request and response details are available.)
+then logs will be stored in the "db_fwd_logs" table.
 
 
 ### `queries` Section
