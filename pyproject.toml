@@ -23,6 +23,7 @@ dev = [
     "types-requests",
     "pyinstaller>=6.0.0",
     "pytest>=8.0.0",
+    "pytest-unmagic>=1.0.1",
     "ruff>=0.14.2",
 ]
 
