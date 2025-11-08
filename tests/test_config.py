@@ -5,11 +5,12 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from unmagic import fixture
 
 from db_fwd import Config
 
 
-@pytest.fixture
+@fixture
 def sample_config_file():
     config_content = """
 [db_fwd]
@@ -49,8 +50,9 @@ query = "SELECT result FROM minimal;"
         Path(temp_path).unlink()
 
 
-def test_config_load_success(sample_config_file):
-    config = Config(sample_config_file)
+def test_config_load_success():
+    config_file = sample_config_file()
+    config = Config(config_file)
     assert config.config is not None
     assert 'db_fwd' in config.config
     assert 'queries' in config.config
@@ -61,8 +63,9 @@ def test_config_file_not_found():
         Config('nonexistent.toml')
 
 
-def test_get_log_level(sample_config_file):
-    config = Config(sample_config_file)
+def test_get_log_level():
+    config_file = sample_config_file()
+    config = Config(config_file)
     assert config.get_log_level() == 'debug'
 
 
@@ -82,8 +85,9 @@ def test_get_log_level_default():
         Path(temp_path).unlink()
 
 
-def test_get_log_file(sample_config_file):
-    config = Config(sample_config_file)
+def test_get_log_file():
+    config_file = sample_config_file()
+    config = Config(config_file)
     assert config.get_log_file() == 'test.log'
 
 
@@ -103,18 +107,21 @@ def test_get_log_file_default():
         Path(temp_path).unlink()
 
 
-def test_get_log_db_url(sample_config_file):
-    config = Config(sample_config_file)
+def test_get_log_db_url():
+    config_file = sample_config_file()
+    config = Config(config_file)
     assert config.get_log_db_url() == 'postgresql://localhost/test_logs'
 
 
-def test_get_db_url_from_queries_section(sample_config_file):
-    config = Config(sample_config_file)
+def test_get_db_url_from_queries_section():
+    config_file = sample_config_file()
+    config = Config(config_file)
     assert config.get_db_url('test_query') == 'postgresql://localhost/test_db'
 
 
-def test_get_db_url_query_specific(sample_config_file):
-    config = Config(sample_config_file)
+def test_get_db_url_query_specific():
+    config_file = sample_config_file()
+    config = Config(config_file)
     assert (
         config.get_db_url('query_with_db') == 'postgresql://localhost/other_db'
     )
@@ -167,19 +174,21 @@ query = "SELECT 1;"
         Path(temp_path).unlink()
 
 
-def test_get_query(sample_config_file):
-    config = Config(sample_config_file)
+def test_get_query():
+    config_file = sample_config_file()
+    config = Config(config_file)
     query = config.get_query('test_query')
     assert 'SELECT json_payload FROM test_view' in query
 
 
-def test_get_query_not_found(sample_config_file):
-    config = Config(sample_config_file)
+def test_get_query_not_found():
+    config_file = sample_config_file()
+    config = Config(config_file)
     with pytest.raises(ValueError, match="Query 'nonexistent' not found"):
         config.get_query('nonexistent')
 
 
-def test_get_query_no_sql(sample_config_file):
+def test_get_query_no_sql():
     config_content = """
 [queries]
 
@@ -201,13 +210,15 @@ api_url = "https://example.com/api"
         Path(temp_path).unlink()
 
 
-def test_get_api_url_query_specific(sample_config_file):
-    config = Config(sample_config_file)
+def test_get_api_url_query_specific():
+    config_file = sample_config_file()
+    config = Config(config_file)
     assert config.get_api_url('test_query') == 'https://example.com/api/test'
 
 
-def test_get_api_url_from_queries_section(sample_config_file):
-    config = Config(sample_config_file)
+def test_get_api_url_from_queries_section():
+    config_file = sample_config_file()
+    config = Config(config_file)
     assert (
         config.get_api_url('minimal_query')
         == 'https://example.com/api/default'
@@ -236,14 +247,16 @@ query = "SELECT 1;"
         Path(temp_path).unlink()
 
 
-def test_get_api_credentials_from_queries(sample_config_file):
-    config = Config(sample_config_file)
+def test_get_api_credentials_from_queries():
+    config_file = sample_config_file()
+    config = Config(config_file)
     creds = config.get_api_credentials('test_query')
     assert creds == ('test_user', 'test_pass')
 
 
-def test_get_api_credentials_query_specific(sample_config_file):
-    config = Config(sample_config_file)
+def test_get_api_credentials_query_specific():
+    config_file = sample_config_file()
+    config = Config(config_file)
     creds = config.get_api_credentials('query_with_db')
     assert creds == ('other_user', 'other_pass')
 

@@ -10,13 +10,14 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
+from unmagic import fixture
 
 from db_fwd import execute_query, DatabaseHandler
 
 TEST_DB_URL = 'postgresql://postgres:postgres@localhost:5432/postgres'
 
 
-@pytest.fixture(scope='function')
+@fixture()
 def test_db():
     engine = create_engine(TEST_DB_URL)
 
@@ -44,7 +45,7 @@ def test_db():
         engine.dispose()
 
 
-@pytest.fixture(scope='function')
+@fixture()
 def test_log_db():
     engine = create_engine(TEST_DB_URL)
 
@@ -63,8 +64,9 @@ def test_log_db():
         engine.dispose()
 
 
-def test_execute_query_success(test_db):
-    engine = create_engine(test_db)
+def test_execute_query_success():
+    db_url = test_db()
+    engine = create_engine(db_url)
 
     with engine.connect() as conn:
         conn.execute(
@@ -76,14 +78,15 @@ def test_execute_query_success(test_db):
     engine.dispose()
 
     result = execute_query(
-        test_db, 'SELECT data::text FROM test_data LIMIT 1;', []
+        db_url, 'SELECT data::text FROM test_data LIMIT 1;', []
     )
 
     assert result == '{"test": "data"}'
 
 
-def test_execute_query_with_params(test_db):
-    engine = create_engine(test_db)
+def test_execute_query_with_params():
+    db_url = test_db()
+    engine = create_engine(db_url)
 
     with engine.connect() as conn:
         conn.execute(
@@ -95,7 +98,7 @@ def test_execute_query_with_params(test_db):
     engine.dispose()
 
     result = execute_query(
-        test_db,
+        db_url,
         "SELECT data::text FROM test_data WHERE data->>'period' = :param1;",
         ['2024Q1'],
     )
@@ -103,17 +106,18 @@ def test_execute_query_with_params(test_db):
     assert result == '{"period": "2024Q1"}'
 
 
-def test_execute_query_no_results(test_db):
-    # Don't insert any data, table is empty
+def test_execute_query_no_results():
+    db_url = test_db()
 
     with pytest.raises(ValueError, match='Query returned no results'):
         execute_query(
-            test_db, 'SELECT data FROM test_data WHERE id = 99999;', []
+            db_url, 'SELECT data FROM test_data WHERE id = 99999;', []
         )
 
 
-def test_execute_query_multiple_fields(test_db):
-    engine = create_engine(test_db)
+def test_execute_query_multiple_fields():
+    db_url = test_db()
+    engine = create_engine(db_url)
 
     with engine.connect() as conn:
         conn.execute(
@@ -127,11 +131,12 @@ def test_execute_query_multiple_fields(test_db):
     with pytest.raises(
         ValueError, match='Query must return exactly one field'
     ):
-        execute_query(test_db, 'SELECT id, data FROM test_data;', [])
+        execute_query(db_url, 'SELECT id, data FROM test_data;', [])
 
 
-def test_execute_query_multiple_rows(test_db):
-    engine = create_engine(test_db)
+def test_execute_query_multiple_rows():
+    db_url = test_db()
+    engine = create_engine(db_url)
 
     with engine.connect() as conn:
         conn.execute(
@@ -147,7 +152,7 @@ def test_execute_query_multiple_rows(test_db):
     engine.dispose()
 
     with pytest.raises(ValueError, match='Query returned more than one row'):
-        execute_query(test_db, 'SELECT data FROM test_data;', [])
+        execute_query(db_url, 'SELECT data FROM test_data;', [])
 
 
 @patch('db_fwd.create_engine')
@@ -165,12 +170,13 @@ def test_execute_query_database_error(mock_create_engine):
         execute_query('postgresql://localhost/test', 'SELECT data;', [])
 
 
-def test_database_handler_init(test_log_db):
-    handler = DatabaseHandler(test_log_db)
+def test_database_handler_init():
+    log_db_url = test_log_db()
+    handler = DatabaseHandler(log_db_url)
 
     assert handler.engine is not None
 
-    engine = create_engine(test_log_db)
+    engine = create_engine(log_db_url)
     with engine.connect() as conn:
         exists = conn.execute(
             text(
@@ -188,10 +194,11 @@ def test_database_handler_init(test_log_db):
     engine.dispose()
 
 
-def test_database_handler_emit(test_log_db):
+def test_database_handler_emit():
     import logging
 
-    handler = DatabaseHandler(test_log_db)
+    log_db_url = test_log_db()
+    handler = DatabaseHandler(log_db_url)
 
     logger = logging.getLogger('test_logger')
     logger.addHandler(handler)
@@ -199,7 +206,7 @@ def test_database_handler_emit(test_log_db):
 
     logger.info('Test message')
 
-    engine = create_engine(test_log_db)
+    engine = create_engine(log_db_url)
     with engine.connect() as conn:
         result = conn.execute(text('SELECT level, message FROM db_fwd_logs'))
         row = result.fetchone()
@@ -239,8 +246,9 @@ def test_database_handler_emit_error(mock_create_engine):
     logger.removeHandler(handler)
 
 
-def test_execute_query_sql_injection_safe(test_db):
-    engine = create_engine(test_db)
+def test_execute_query_sql_injection_safe():
+    db_url = test_db()
+    engine = create_engine(db_url)
 
     with engine.connect() as conn:
         conn.execute(
@@ -255,14 +263,14 @@ def test_execute_query_sql_injection_safe(test_db):
 
     try:
         execute_query(
-            test_db,
+            db_url,
             "SELECT data FROM test_data WHERE data->>'data' = :param1;",
             [malicious_param],
         )
     except ValueError:
         pass  # Expected - no results found
 
-    engine = create_engine(test_db)
+    engine = create_engine(db_url)
     with engine.connect() as conn:
         exists = conn.execute(
             text(
@@ -282,8 +290,9 @@ def test_execute_query_sql_injection_safe(test_db):
     engine.dispose()
 
 
-def test_execute_query_multiple_params(test_db):
-    engine = create_engine(test_db)
+def test_execute_query_multiple_params():
+    db_url = test_db()
+    engine = create_engine(db_url)
 
     with engine.connect() as conn:
         conn.execute(
@@ -297,7 +306,7 @@ def test_execute_query_multiple_params(test_db):
     engine.dispose()
 
     result = execute_query(
-        test_db,
+        db_url,
         """
         SELECT data::text
         FROM test_data
