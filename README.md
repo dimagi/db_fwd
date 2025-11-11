@@ -4,6 +4,22 @@ db_fwd
 Forwards a SQL query result to a web API endpoint.
 
 
+Use Case
+--------
+
+**db_fwd** was created to send data, aggregated in PostgreSQL, to the
+[DHIS2 API for data value sets](https://docs.dhis2.org/en/develop/using-the-api/dhis-core-version-242/data.html).
+
+It is generic enough to send data from any database that can return a
+result as a JSON object (e.g. SQL Server, MySQL, MariaDB, Oracle
+Database, IBM Db2) to any API endpoint that accepts JSON data and
+supports basic authentication.
+
+Based on this use case, **db_fwd** expects queries to return only one
+row, and only one field, which contains the payload. It will return an
+error if a query returns more than one row and more than one field.
+
+
 Installation
 ------------
 
@@ -97,6 +113,9 @@ The configuration file is given in TOML format. This file can contain
 passwords, and should only be readable by the user that **db_fwd** will
 run as.
 
+The `db_fwd.toml.example` file includes detailed examples. It can be
+copied to `db_fwd.toml`and customized.
+
 The following is an example configuration:
 
 ```toml
@@ -125,15 +144,14 @@ api_url = 'https://dhis2.example.com/api/dataset/efgh5678/'
 #### Logging
 
 If not specified, `log_level` defaults to "info". Valid values are
-"none", "info" and "debug".
+"none", "info" and "debug". The log level applies to both the log file
+and the log database.
 
 If not specified, `log_file` defaults to "db_fwd.log" in the same
 directory as `db_fwd.py`.
 
 `log_db_url` is optional. It stores a database URL. If it is specified
-then debug-level logs will be stored in the "db_fwd_logs" table. (Log
-level is _always debug_ regardless of the `log_level` setting used for
-`log_file`. This is so that request and response details are available.)
+then logs will be stored in the "db_fwd_logs" table.
 
 
 ### `queries` Section
@@ -152,7 +170,8 @@ environment variables "DB_FWD_API_USERNAME" and "DB_FWD_API_PASSWORD".
 
 ### `queries.queryname` Sections
 
-Each query has a section.
+Each query has a section, where "queryname" is the name of the query as
+it will be given on the command line.
 
 `query` is the SQL query that will be executed. It must return a single
 field. Query parameters should use named placeholders (`:param1`,
