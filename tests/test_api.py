@@ -4,6 +4,7 @@ import logging
 import pytest
 from unittest.mock import Mock, patch
 import requests
+from unmagic import get_request
 
 from db_fwd import forward_to_api
 
@@ -99,7 +100,8 @@ def test_forward_to_api_json_payload(mock_post):
 
 
 @patch('db_fwd.requests.post')
-def test_forward_to_api_logging(mock_post, caplog):
+def test_forward_to_api_logging(mock_post):
+    log_capture = get_request().getfixturevalue('caplog')
     mock_response = Mock()
     mock_response.status_code = 201
     mock_response.text = '{"id": 123}'
@@ -107,8 +109,8 @@ def test_forward_to_api_logging(mock_post, caplog):
 
     payload = {'test': 'data'}
 
-    with caplog.at_level(logging.DEBUG):
+    with log_capture.at_level(logging.DEBUG):
         forward_to_api('https://example.com/api', payload, ('user', 'pass'))
 
-    debug_records = [r for r in caplog.records if r.levelname == 'DEBUG']
+    debug_records = [r for r in log_capture.records if r.levelname == 'DEBUG']
     assert len(debug_records) >= 2  # Request and response should be logged
